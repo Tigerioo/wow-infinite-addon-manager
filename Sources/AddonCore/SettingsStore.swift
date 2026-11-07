@@ -18,7 +18,10 @@ public struct SettingsStore {
         catch { throw AddonError.message("无法读取已保存的配置。请保留配置文件并检查其内容：\(fileURL.path)") }
     }
     public func save(_ settings: AppSettings) throws {
-        try FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let parent = fileURL.deletingLastPathComponent()
+        if !FileManager.default.fileExists(atPath: parent.path) {
+            try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
+        }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         try encoder.encode(settings).write(to: fileURL, options: .atomic)

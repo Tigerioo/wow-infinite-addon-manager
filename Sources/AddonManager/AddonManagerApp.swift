@@ -45,7 +45,7 @@ struct ContentView: View {
                 Text("插件管理").font(.title2.weight(.semibold))
                 Spacer()
                 Button { model.selectDirectory() } label: { Text("选择插件目录…") }
-                    .disabled(model.isChecking)
+                    .disabled(model.isChecking || model.loadFailed)
                 Button { showingAdd = true } label: { Label("添加插件", systemImage: "plus") }
                     .disabled(model.isChecking || model.settings.directoryPath.isEmpty)
             }.padding(.horizontal, 24).padding(.top, 22).padding(.bottom, 16)

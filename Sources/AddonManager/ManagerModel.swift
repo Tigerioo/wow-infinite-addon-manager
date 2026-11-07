@@ -11,7 +11,7 @@ final class ManagerModel: ObservableObject {
     private var store: SettingsStore?
     private let client = GitHubReleaseClient()
     private var timer: Task<Void, Never>?
-    private var loadFailed = false
+    @Published private(set) var loadFailed = false
 
     init() {
         do {
@@ -152,7 +152,13 @@ final class ManagerModel: ObservableObject {
             next.addons[index].installedTag = release.tagName
             next.addons[index].managedDirectory = root.path
             next.addons[index].lastStatus = "已安装 \(release.tagName)"
-            try persist(&next, event: "\(addon.name) · 已安装 \(release.tagName)")
+            do {
+                try persist(&next, event: "\(addon.name) · 已安装 \(release.tagName)")
+            } catch {
+                next.addons[index].lastStatus = "已安装 \(release.tagName)，但配置未保存；请修复配置目录权限后重新检查。"
+                settings = next
+                errorMessage = "插件已安装，但配置保存失败：\(error.localizedDescription)。请保持应用打开，修复配置目录后重新检查；如果已重启，可通过‘接管已有插件’恢复管理。"
+            }
         } catch {
             do { try update(id, status: "需要处理：\(error.localizedDescription)", event: "\(addon.name) · \(error.localizedDescription)") }
             catch { errorMessage = error.localizedDescription }
@@ -170,6 +176,7 @@ final class ManagerModel: ObservableObject {
         catch { errorMessage = "保存失败：\(error.localizedDescription)" }
     }
     private func persist(_ value: inout AppSettings, event: String?) throws {
+        guard !loadFailed else { throw AddonError.message("配置读取失败，已保护原文件，不能保存。") }
         if let event {
             value.history.insert(HistoryEntry(message: event), at: 0)
             if value.history.count > 100 { value.history = Array(value.history.prefix(100)) }
