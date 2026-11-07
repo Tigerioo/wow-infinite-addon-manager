@@ -93,6 +93,7 @@ struct AddonRow: View {
     let addon: Addon
     let edit: () -> Void
     @State private var confirmingRemoval = false
+    @State private var confirmingAdoption = false
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
@@ -106,12 +107,21 @@ struct AddonRow: View {
                 Toggle("自动更新", isOn: Binding(get: { addon.automaticUpdates }, set: { model.setAutomatic(addon.id, $0) }))
                     .disabled(model.isChecking)
                 HStack {
+                    if model.canAdopt(addon) {
+                        Button("接管已有插件") { confirmingAdoption = true }
+                    }
                     Button("编辑", action: edit)
                     Button("移除") { confirmingRemoval = true }
                     Button("检查并安装") { Task { await model.checkOne(addon.id, install: true) } }
                 }.disabled(model.isChecking)
             }.fixedSize()
         }.padding(.vertical, 9)
+        .alert("接管已有插件？", isPresented: $confirmingAdoption) {
+            Button("取消", role: .cancel) {}
+            Button("备份并接管") { Task { await model.checkOne(addon.id, install: true, adoptExisting: true) } }
+        } message: {
+            Text("将备份现有的 \(addon.addonDirectory) 文件夹，再用指定 Release 替换。该文件夹中的本地修改不会自动合并，请先退出游戏并确认备份。")
+        }
         .alert("移除插件配置？", isPresented: $confirmingRemoval) {
             Button("取消", role: .cancel) {}
             Button("移除配置", role: .destructive) { model.remove(addon) }

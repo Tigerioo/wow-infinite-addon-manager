@@ -12,7 +12,7 @@ macOS 本机工具，用于跟踪公开 GitHub 仓库的正式 Release，并将�
 
 ## 目录和恢复
 
-首次安装时，如果目标目录已有同名插件，本应用会停止并提示，不会自动覆盖；请先自行核对和备份。已安装并由本应用管理的插件更新时，应用会把旧目录保留为 `AddOns` 内以 `.addon-manager-backup-` 开头的隐藏备份目录。备份不会自动删除。配置只保存在本机的 `~/Library/Application Support/WoWAddonManager/settings.json`。
+首次安装时，如果目标目录已有同名插件，自动更新会停止，不会自动覆盖。核对后可选择“接管已有插件”，经确认后应用将备份旧目录并安装指定 Release；插件目录中的本地修改不会自动合并。已安装并由本应用管理的插件更新时，应用会把旧目录保留为 `AddOns` 内以 `.addon-manager-backup-` 开头的隐藏备份目录。备份不会自动删除。配置只保存在本机的 `~/Library/Application Support/WoWAddonManager/settings.json`。
 
 安装中断后如出现以 `.addon-manager-recovery-` 或 `.addon-manager-install-` 开头的目录，应用会停止继续安装并显示路径。请先关闭应用并核对插件目录与恢复目录，再手动恢复；不要删除尚未检查的备份。插件目录之外的文件不会被安装器操作。游戏设置与存档位置由客户端决定，请在使用前自行确认。
 

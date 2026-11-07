@@ -98,24 +98,33 @@ final class ManagerModel: ObservableObject {
         for id in settings.addons.map(\.id) { await check(id, forceInstall: false) }
     }
 
-    func checkOne(_ id: UUID, install: Bool) async {
+    func canAdopt(_ addon: Addon) -> Bool {
+        guard !settings.directoryPath.isEmpty else { return false }
+        let root = URL(fileURLWithPath: settings.directoryPath, isDirectory: true).standardizedFileURL
+        guard addon.managedDirectory != root.path else { return false }
+        var isDirectory: ObjCBool = false
+        return FileManager.default.fileExists(atPath: root.appendingPathComponent(addon.addonDirectory).path, isDirectory: &isDirectory) && isDirectory.boolValue
+    }
+
+    func checkOne(_ id: UUID, install: Bool, adoptExisting: Bool = false) async {
         guard !isChecking, !loadFailed else { return }
         isChecking = true
         defer { isChecking = false }
-        await check(id, forceInstall: install)
+        await check(id, forceInstall: install, adoptExisting: adoptExisting)
     }
 
-    private func check(_ id: UUID, forceInstall: Bool) async {
+    private func check(_ id: UUID, forceInstall: Bool, adoptExisting: Bool = false) async {
         guard let addon = settings.addons.first(where: { $0.id == id }) else { return }
         do {
             let release = try await client.latest(repository: addon.repository)
             let asset = try client.asset(named: addon.assetName, in: release)
             let root = URL(fileURLWithPath: settings.directoryPath, isDirectory: true).standardizedFileURL
-            let managed = addon.managedDirectory == root.path && addon.installedReleaseID != nil
+            let knownManaged = addon.managedDirectory == root.path && addon.installedReleaseID != nil
+            let managed = knownManaged || adoptExisting
             let installedPath = root.appendingPathComponent(addon.addonDirectory, isDirectory: true).path
             var existingDirectory: ObjCBool = false
             let exists = FileManager.default.fileExists(atPath: installedPath, isDirectory: &existingDirectory) && existingDirectory.boolValue
-            let isCurrent = managed && exists && addon.installedReleaseID == release.id && addon.installedAssetID == asset.id && addon.installedDigest == asset.digest
+            let isCurrent = knownManaged && exists && addon.installedReleaseID == release.id && addon.installedAssetID == asset.id && addon.installedDigest == asset.digest
             if isCurrent {
                 try update(id, status: "已是最新 · \(release.tagName)", event: nil)
                 return
